@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Ticket POS - Juxta Services</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --primary-color: #2c3e50;
+            --button-color: #198754;
+            --button-hover: #157347;
+            --ticket-bg: #fff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: var(--ticket-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--button-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: var(--button-hover);
+        }
+        .nota {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Generador de Ticket</h2>
+        
+        <div class="form-group">
+            <label for="cliente">Nombre del Cliente:</label>
+            <input type="text" id="cliente" placeholder="Ej. Juan Pérez" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="identificacion">NIT / Cédula (Opcional):</label>
+            <input type="text" id="identificacion" placeholder="Ej. 123456789">
+        </div>
+        
+        <div class="form-group">
+            <label for="producto">Concepto / Producto:</label>
+            <input type="text" id="producto" placeholder="Ej. Combo Pollo Asado" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="valor">Valor Total ($):</label>
+            <input type="number" id="valor" placeholder="Ej. 25000" required>
+        </div>
+        
+        <button onclick="procesarTicket()">Generar y Enviar Ticket</button>
+        <p class="nota">Desarrollado por Juxta Services</p>
+    </div>
+
+    <script>
+        // Formateador de moneda para Colombia (COP)
+        const formatearMoneda = (valor) => {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0
+            }).format(valor);
+        };
+
+        // Generador de Fecha en formato DD/MM/YYYY HH:MM
+        const obtenerFechaActual = () => {
+            const ahora = new Date();
+            const dia = String(ahora.getDate()).padStart(2, '0');
+            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+            const anio = ahora.getFullYear();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            return `${dia}/${mes}/${anio} ${horas}:${minutos}`;
+        };
+
+        // Función principal
+        function procesarTicket() {
+            // 1. Validar y capturar datos
+            const cliente = document.getElementById('cliente').value.trim() || 'CLIENTE MOSTRADOR';
+            const identificacion = document.getElementById('identificacion').value.trim() || 'N/A';
+            const producto = document.getElementById('producto').value.trim() || 'Venta General';
+            const valorInput = document.getElementById('valor').value;
+            
+            if (!valorInput) {
+                alert('Por favor, ingresa el valor de la venta.');
+                return;
+            }
+
+            const valorFormat = formatearMoneda(valorInput);
+            const fechaStr = obtenerFechaActual();
+            const ticketNro = Math.floor(Math.random() * 10000).toString().padStart(4, '0'); // Simula un consecutivo
+
+            // 2. Construir la plantilla de texto del ticket (Formato Monospace)
+            const separador = "--------------------------------\n";
+            let ticketTexto = "";
+            ticketTexto += "       NEGOCIO DEL CLIENTE      \n";
+            ticketTexto += `          NIT: 900.XXX.XXX-X    \n`;
+            ticketTexto += "        TICKET DE VENTA - POS   \n";
+            ticketTexto += separador;
+            ticketTexto += `FECHA: ${fechaStr}\n`;
+            ticketTexto += `TICKET NRO: #${ticketNro}\n`;
+            ticketTexto += `CLIENTE: ${cliente}\n`;
+            ticketTexto += `CC/NIT: ${identificacion}\n`;
+            ticketTexto += separador;
+            ticketTexto += "CANT CONCEPTO              TOTAL\n";
+            // Lógica para alinear texto en consola: asegura que el producto no desborde y el total quede a la derecha
+            let prodAjustado = producto.length > 15 ? producto.substring(0, 15) + "..." : producto.padEnd(18, " ");
+            ticketTexto += `1    ${prodAjustado} ${valorFormat}\n`;
+            ticketTexto += separador;
+            ticketTexto += `TOTAL PAGADO:           ${valorFormat}\n`;
+            ticketTexto += separador;
+            ticketTexto += "   ¡Gracias por su compra!      \n";
+            ticketTexto += "     Software Juxta Services    \n";
+            ticketTexto += "       *** COPIA CLIENTE *** \n";
+
+            // 3. Generar y descargar el archivo .txt
+            const blob = new Blob([ticketTexto], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Ticket_${ticketNro}_${cliente.replace(/\s+/g, '_')}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // 4. Redirigir a WhatsApp (Esperamos 500ms para asegurar la descarga del TXT primero)
+            setTimeout(() => {
+                const mensajeWa = encodeURIComponent("Adjunto su recibo de compra:\n\n" + ticketTexto);
+                const urlWa = `https://wa.me/?text=${mensajeWa}`;
+                window.open(urlWa, '_blank');
+                
+                // Limpiar formulario para la siguiente venta
+                document.getElementById('cliente').value = '';
+                document.getElementById('identificacion').value = '';
+                document.getElementById('producto').value = '';
+                document.getElementById('valor').value = '';
+            }, 500);
+        }
+    </script>
+</body>
+</html>
