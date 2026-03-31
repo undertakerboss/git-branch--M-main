@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Ticket POS - Juxta Services</title>
+    <title>POS Zero-Cost - Juxta Services</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --bg-color: #f4f4f9;
-            --primary-color: #2c3e50;
-            --button-color: #198754;
-            --button-hover: #157347;
+            --bg-color: #e9ecef;
+            --primary-color: #2b2d42;
+            --button-color: #2a9d8f;
+            --button-hover: #21867a;
             --ticket-bg: #fff;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg-color);
             color: var(--primary-color);
             display: flex;
@@ -24,171 +25,248 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        .container {
+        .ui-container {
             background-color: var(--ticket-bg);
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 400px;
+            position: relative;
+            z-index: 10;
         }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
+        h2 { text-align: center; margin-bottom: 25px; font-size: 1.6rem; color: #1d3557; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+        input {
+            width: 100%; padding: 12px; border: 2px solid #dee2e6;
+            border-radius: 6px; box-sizing: border-box; font-size: 1rem;
+            transition: border-color 0.3s;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
+        input:focus { border-color: var(--button-color); outline: none; }
         button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--button-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 10px;
+            width: 100%; padding: 14px; background-color: var(--button-color);
+            color: white; border: none; border-radius: 6px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; transition: background-color 0.3s;
+            margin-top: 15px; box-shadow: 0 4px 6px rgba(42, 157, 143, 0.2);
         }
-        button:hover {
-            background-color: var(--button-hover);
+        button:hover { background-color: var(--button-hover); transform: translateY(-1px); }
+        .nota { font-size: 0.8rem; color: #6c757d; text-align: center; margin-top: 20px; font-weight: bold;}
+
+        /* --- INGENIERÍA DEL TICKET VISUAL (OCULTO EN PANTALLA, VISIBLE PARA RENDER) --- */
+        #ticket-render-zone {
+            position: absolute;
+            left: -9999px; /* Lo sacamos de la pantalla para no dañar la UI */
+            top: 0;
         }
-        .nota {
-            font-size: 0.8rem;
-            color: #666;
-            text-align: center;
-            margin-top: 15px;
+        #ticket-visual {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: white;
+            color: black;
+            width: 380px; /* Ancho estándar de impresora térmica de 80mm */
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 14px;
+            line-height: 1.4;
         }
+        .t-center { text-align: center; }
+        .t-bold { font-weight: bold; }
+        .t-dashed { border-bottom: 1px dashed #000; margin: 10px 0; }
+        .t-row { display: flex; justify-content: space-between; }
+        .t-title { font-size: 18px; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Generador de Ticket</h2>
+    <div class="ui-container">
+        <h2>Generador POS</h2>
         
         <div class="form-group">
-            <label for="cliente">Nombre del Cliente:</label>
-            <input type="text" id="cliente" placeholder="Ej. Juan Pérez" required>
+            <label for="cliente">Cliente (Opcional):</label>
+            <input type="text" id="cliente" placeholder="Ej. Juan Pérez">
         </div>
         
         <div class="form-group">
-            <label for="identificacion">NIT / Cédula (Opcional):</label>
+            <label for="identificacion">Cédula / NIT (Opcional):</label>
             <input type="text" id="identificacion" placeholder="Ej. 123456789">
         </div>
         
         <div class="form-group">
-            <label for="producto">Concepto / Producto:</label>
-            <input type="text" id="producto" placeholder="Ej. Combo Pollo Asado" required>
+            <label for="producto">Producto Vendido:</label>
+            <input type="text" id="producto" placeholder="Ej. Medio Pollo Asado + Gaseosa" required>
         </div>
         
         <div class="form-group">
-            <label for="valor">Valor Total ($):</label>
-            <input type="number" id="valor" placeholder="Ej. 25000" required>
+            <label for="valor">Valor Total a Cobrar ($):</label>
+            <input type="number" id="valor" placeholder="Ej. 35000" required>
         </div>
         
-        <button onclick="procesarTicket()">Generar y Enviar Ticket</button>
+        <button id="btnGenerar" onclick="procesarTicket()">Generar e Imprimir Recibo</button>
         <p class="nota">Desarrollado por Juxta Services</p>
     </div>
 
+    <div id="ticket-render-zone">
+        <div id="ticket-visual">
+            <div class="t-center t-bold t-title" id="t-empresa-nombre">NOMBRE EMPRESA</div>
+            <div class="t-center">NIT: <span id="t-empresa-nit">000000</span></div>
+            <div class="t-center" id="t-empresa-dir">Dirección</div>
+            <div class="t-center">TICKET DE VENTA - POS</div>
+            <div class="t-dashed"></div>
+            
+            <div><span class="t-bold">FECHA: </span><span id="t-fecha"></span></div>
+            <div><span class="t-bold">TICKET NRO: </span>#<span id="t-nro"></span></div>
+            <div><span class="t-bold">CLIENTE: </span><span id="t-cliente"></span></div>
+            <div><span class="t-bold">CC/NIT: </span><span id="t-id"></span></div>
+            <div><span class="t-bold">CAJERO: </span><span id="t-cajero"></span></div>
+            
+            <div class="t-dashed"></div>
+            <div class="t-row t-bold">
+                <span>CANT CONCEPTO</span>
+                <span>TOTAL</span>
+            </div>
+            <div class="t-dashed"></div>
+            
+            <div class="t-row">
+                <span>1 <span id="t-producto"></span></span>
+                <span id="t-valor"></span>
+            </div>
+            
+            <div class="t-dashed"></div>
+            <div class="t-row t-bold" style="font-size: 16px;">
+                <span>TOTAL PAGADO:</span>
+                <span id="t-total"></span>
+            </div>
+            <div class="t-dashed"></div>
+            
+            <div class="t-center">¡Gracias por su compra!</div>
+            <div class="t-center">Software por Juxta Services</div>
+            <div class="t-center" style="margin-top: 10px;">*** COPIA CLIENTE ***</div>
+        </div>
+    </div>
+
     <script>
-        // Formateador de moneda para Colombia (COP)
+        // =========================================================
+        // CONFIGURACIÓN ESTÁTICA DEL NEGOCIO (Evita pedir info al usuario)
+        // Puedes cambiar estos valores directamente aquí en el código.
+        // =========================================================
+        const CONFIG_NEGOCIO = {
+            nombre: "POLLOS EL BUEN SABOR",
+            nit: "900.123.456-7",
+            direccion: "Calle Principal #12-34",
+            cajeroDefault: "Caja General 01"
+        };
+
+        // Formateador Matemático de Moneda (COP)
         const formatearMoneda = (valor) => {
             return new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                minimumFractionDigits: 0
+                style: 'currency', currency: 'COP', minimumFractionDigits: 0
             }).format(valor);
         };
 
-        // Generador de Fecha en formato DD/MM/YYYY HH:MM
+        // Timestamp generator
         const obtenerFechaActual = () => {
             const ahora = new Date();
             const dia = String(ahora.getDate()).padStart(2, '0');
             const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-            const anio = ahora.getFullYear();
             const horas = String(ahora.getHours()).padStart(2, '0');
             const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            return `${dia}/${mes}/${anio} ${horas}:${minutos}`;
+            return `${dia}/${mes}/${ahora.getFullYear()} ${horas}:${minutos}`;
         };
 
-        // Función principal
-        function procesarTicket() {
-            // 1. Validar y capturar datos
-            const cliente = document.getElementById('cliente').value.trim() || 'CLIENTE MOSTRADOR';
-            const identificacion = document.getElementById('identificacion').value.trim() || 'N/A';
-            const producto = document.getElementById('producto').value.trim() || 'Venta General';
+        // Función Principal de Ensamblaje y Renderizado
+        async function procesarTicket() {
+            const btn = document.getElementById('btnGenerar');
             const valorInput = document.getElementById('valor').value;
+            const productoInput = document.getElementById('producto').value.trim();
             
-            if (!valorInput) {
-                alert('Por favor, ingresa el valor de la venta.');
+            if (!valorInput || !productoInput) {
+                alert('Por favor, ingresa el producto y el valor.');
                 return;
             }
 
-            const valorFormat = formatearMoneda(valorInput);
-            const fechaStr = obtenerFechaActual();
-            const ticketNro = Math.floor(Math.random() * 10000).toString().padStart(4, '0'); // Simula un consecutivo
+            // Estado de carga UI
+            btn.innerText = "Procesando...";
+            btn.disabled = true;
 
-            // 2. Construir la plantilla de texto del ticket (Formato Monospace)
-            const separador = "--------------------------------\n";
-            let ticketTexto = "";
-            ticketTexto += "       NEGOCIO DEL CLIENTE      \n";
-            ticketTexto += `          NIT: 900.XXX.XXX-X    \n`;
-            ticketTexto += "        TICKET DE VENTA - POS   \n";
-            ticketTexto += separador;
-            ticketTexto += `FECHA: ${fechaStr}\n`;
-            ticketTexto += `TICKET NRO: #${ticketNro}\n`;
-            ticketTexto += `CLIENTE: ${cliente}\n`;
-            ticketTexto += `CC/NIT: ${identificacion}\n`;
-            ticketTexto += separador;
-            ticketTexto += "CANT CONCEPTO              TOTAL\n";
-            // Lógica para alinear texto en consola: asegura que el producto no desborde y el total quede a la derecha
-            let prodAjustado = producto.length > 15 ? producto.substring(0, 15) + "..." : producto.padEnd(18, " ");
-            ticketTexto += `1    ${prodAjustado} ${valorFormat}\n`;
-            ticketTexto += separador;
-            ticketTexto += `TOTAL PAGADO:           ${valorFormat}\n`;
-            ticketTexto += separador;
-            ticketTexto += "   ¡Gracias por su compra!      \n";
-            ticketTexto += "     Software Juxta Services    \n";
-            ticketTexto += "       *** COPIA CLIENTE *** \n";
+            try {
+                // 1. Recolectar datos dinámicos
+                const cliente = document.getElementById('cliente').value.trim() || 'CONSUMIDOR FINAL';
+                const identificacion = document.getElementById('identificacion').value.trim() || '222222222222';
+                const valorFormat = formatearMoneda(valorInput);
+                const ticketNro = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
 
-            // 3. Generar y descargar el archivo .txt
-            const blob = new Blob([ticketTexto], { type: "text/plain;charset=utf-8" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `Ticket_${ticketNro}_${cliente.replace(/\s+/g, '_')}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // 4. Redirigir a WhatsApp (Esperamos 500ms para asegurar la descarga del TXT primero)
-            setTimeout(() => {
-                const mensajeWa = encodeURIComponent("Adjunto su recibo de compra:\n\n" + ticketTexto);
-                const urlWa = `https://wa.me/?text=${mensajeWa}`;
-                window.open(urlWa, '_blank');
+                // 2. Inyectar datos en el modelo visual (El Ticket HTML)
+                document.getElementById('t-empresa-nombre').innerText = CONFIG_NEGOCIO.nombre;
+                document.getElementById('t-empresa-nit').innerText = CONFIG_NEGOCIO.nit;
+                document.getElementById('t-empresa-dir').innerText = CONFIG_NEGOCIO.direccion;
                 
-                // Limpiar formulario para la siguiente venta
-                document.getElementById('cliente').value = '';
-                document.getElementById('identificacion').value = '';
-                document.getElementById('producto').value = '';
-                document.getElementById('valor').value = '';
-            }, 500);
+                document.getElementById('t-fecha').innerText = obtenerFechaActual();
+                document.getElementById('t-nro').innerText = ticketNro;
+                document.getElementById('t-cliente').innerText = cliente.toUpperCase();
+                document.getElementById('t-id').innerText = identificacion;
+                document.getElementById('t-cajero').innerText = CONFIG_NEGOCIO.cajeroDefault;
+                
+                // Truncar producto si es muy largo para no desarmar el diseño
+                let prodCorto = productoInput.length > 20 ? productoInput.substring(0, 20) + "..." : productoInput;
+                document.getElementById('t-producto').innerText = prodCorto.toUpperCase();
+                document.getElementById('t-valor').innerText = valorFormat;
+                document.getElementById('t-total').innerText = valorFormat;
+
+                // 3. Renderizar el DOM a Imagen (PNG) usando html2canvas
+                const ticketElement = document.getElementById('ticket-visual');
+                const canvas = await html2canvas(ticketElement, {
+                    scale: 2, // Alta definición
+                    backgroundColor: "#ffffff"
+                });
+
+                // 4. Convertir el Canvas a Archivo (Blob)
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], `Ticket_${ticketNro}.png`, { type: 'image/png' });
+
+                    // 5. Lógica de Distribución (Compartir vs Descargar)
+                    // Si el dispositivo (como un celular) soporta Web Share API con archivos:
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Ticket de Venta',
+                                text: 'Adjunto su recibo de compra en ' + CONFIG_NEGOCIO.nombre
+                            });
+                        } catch (error) {
+                            console.log('El usuario canceló el compartir.', error);
+                        }
+                    } else {
+                        // Fallback para PC: Forzamos la descarga de la imagen
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.download = `Ticket_${ticketNro}.png`;
+                        link.href = url;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        
+                        // Y abrimos WhatsApp Web con un mensaje indicando que adjunte la imagen descargada
+                        setTimeout(() => {
+                            const msj = encodeURIComponent(`Hola ${cliente}, gracias por tu compra en ${CONFIG_NEGOCIO.nombre}. Tu recibo se ha descargado, por favor adjúntalo aquí para tener el soporte.`);
+                            window.open(`https://wa.me/?text=${msj}`, '_blank');
+                        }, 500);
+                    }
+
+                    // 6. Restaurar Interfaz
+                    document.getElementById('cliente').value = '';
+                    document.getElementById('identificacion').value = '';
+                    document.getElementById('producto').value = '';
+                    document.getElementById('valor').value = '';
+                    btn.innerText = "Generar e Imprimir Recibo";
+                    btn.disabled = false;
+
+                }, 'image/png');
+
+            } catch (error) {
+                console.error("Error en renderizado:", error);
+                alert("Hubo un error al generar el ticket.");
+                btn.innerText = "Generar e Imprimir Recibo";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
