@@ -7,82 +7,71 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --bg-color: #e9ecef;
-            --primary-color: #2b2d42;
-            --button-color: #2a9d8f;
-            --button-hover: #21867a;
-            --secondary-color: #457b9d;
-            --secondary-hover: #1d3557;
-            --danger-color: #e63946;
-            --ticket-bg: #fff;
+            --bg-color: #e9ecef; --primary-color: #2b2d42; --button-color: #2a9d8f;
+            --button-hover: #21867a; --secondary-color: #457b9d; --secondary-hover: #1d3557;
+            --danger-color: #e63946; --ticket-bg: #fff;
         }
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--primary-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-color);
+            color: var(--primary-color); display: flex; justify-content: center;
+            align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
         }
+
+        /* --- UI DE SEGURIDAD (MURO DE FRICCIÓN) --- */
+        #pantalla-bloqueo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--primary-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+            transition: opacity 0.5s ease;
+        }
+        .lock-box {
+            background: rgba(255,255,255,0.1); padding: 40px; border-radius: 12px;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+        }
+        .lock-box input {
+            width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px;
+            padding: 15px; border-radius: 8px; border: none; outline: none;
+        }
+        .lock-box button {
+            background-color: var(--button-color); padding: 15px; font-size: 1.1rem; border-radius: 8px;
+            width: 100%; cursor: pointer; border: none; color: white; font-weight: bold;
+        }
+        .lock-box button:hover { background-color: var(--button-hover); }
+
+        /* --- UI DEL SISTEMA POS --- */
         .ui-container {
-            background-color: var(--ticket-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            position: relative;
-            z-index: 10;
+            background-color: var(--ticket-bg); padding: 25px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; position: relative; z-index: 10;
         }
         h2.ui-title { text-align: center; margin-bottom: 20px; font-size: 1.5rem; color: #1d3557; margin-top: 0;}
-        
-        /* Layout de Venta */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.85rem; }
         input {
-            width: 100%; padding: 10px; border: 2px solid #dee2e6;
-            border-radius: 6px; box-sizing: border-box; font-size: 0.95rem;
-            transition: border-color 0.3s;
+            width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem;
         }
         input:focus { border-color: var(--button-color); outline: none; }
         
-        /* Controles de Ítems */
         .add-item-row { display: flex; gap: 8px; margin-bottom: 15px; align-items: flex-end; }
-        .add-item-row .col-cant { width: 25%; }
-        .add-item-row .col-prod { width: 45%; }
-        .add-item-row .col-precio { width: 30%; }
+        .add-item-row .col-cant { width: 25%; } .add-item-row .col-prod { width: 45%; } .add-item-row .col-precio { width: 30%; }
         
-        button {
-            width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; 
-            font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s;
-        }
+        button { width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-add { background-color: var(--secondary-color); padding: 10px; margin-top: 5px; }
         .btn-add:hover { background-color: var(--secondary-hover); }
         .btn-generar { background-color: var(--button-color); margin-top: 20px; font-size: 1.1rem; }
         .btn-generar:hover { background-color: var(--button-hover); }
         .btn-del { background-color: var(--danger-color); padding: 4px 8px; font-size: 0.8rem; }
 
-        /* Tabla UI */
         .ui-table-container { max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 10px; }
         .ui-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .ui-table th { background-color: #f8f9fa; position: sticky; top: 0; padding: 8px; text-align: left; }
         .ui-table td { padding: 8px; border-bottom: 1px solid #eee; }
         .ui-total-zone { text-align: right; font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 10px;}
 
-        .nota { font-size: 0.8rem; color: #6c757d; text-align: center; margin-top: 20px; font-weight: bold;}
-
-        /* ==========================================================================
-           INGENIERÍA DEL TICKET VISUAL (ESTILO AMS v1.0)
-           ========================================================================== */
+        /* --- INGENIERÍA DEL TICKET VISUAL --- */
         #ticket-render-zone { position: absolute; left: -9999px; top: 0; }
         #ticket-visual {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: white; color: black; width: 320px; padding: 20px; box-sizing: border-box; font-size: 13px;
+            font-family: 'Courier New', Courier, monospace; background-color: white; color: black; width: 320px; padding: 20px; box-sizing: border-box; font-size: 13px;
         }
         .text-center { text-align: center; } .text-left { text-align: left; } .text-right { text-align: right; }
         .bold { font-weight: bold; } .line { border-bottom: 1px dashed #000; margin: 12px 0; } .m-0 { margin: 2px 0; }
@@ -93,35 +82,28 @@
 </head>
 <body>
 
+    <div id="pantalla-bloqueo">
+        <div class="lock-box">
+            <h2 style="margin-top: 0;">Juxta Services POS</h2>
+            <p style="color: #ccc; margin-bottom: 25px;">Acceso Restringido</p>
+            <input type="password" id="pin-acceso" placeholder="PIN">
+            <button onclick="validarAcceso()">Desbloquear Sistema</button>
+        </div>
+    </div>
+
     <div class="ui-container">
         <h2 class="ui-title">Caja Registradora POS</h2>
         
         <div class="grid-2">
-            <div class="form-group">
-                <label for="cliente">Cliente (Opc.):</label>
-                <input type="text" id="cliente" placeholder="Nombre">
-            </div>
-            <div class="form-group">
-                <label for="identificacion">CC/NIT (Opc.):</label>
-                <input type="text" id="identificacion" placeholder="Documento">
-            </div>
+            <div class="form-group"><label for="cliente">Cliente (Opc.):</label><input type="text" id="cliente" placeholder="Nombre"></div>
+            <div class="form-group"><label for="identificacion">CC/NIT (Opc.):</label><input type="text" id="identificacion" placeholder="Documento"></div>
         </div>
-
         <div style="border-top: 2px solid #eee; margin: 15px 0;"></div>
         
         <div class="add-item-row">
-            <div class="col-cant">
-                <label for="item-cant">Cant.</label>
-                <input type="number" id="item-cant" value="1" min="1">
-            </div>
-            <div class="col-prod">
-                <label for="item-desc">Concepto</label>
-                <input type="text" id="item-desc" placeholder="Ej. Filtro...">
-            </div>
-            <div class="col-precio">
-                <label for="item-precio">V. Unit ($)</label>
-                <input type="number" id="item-precio" placeholder="0">
-            </div>
+            <div class="col-cant"><label for="item-cant">Cant.</label><input type="number" id="item-cant" value="1" min="1"></div>
+            <div class="col-prod"><label for="item-desc">Concepto</label><input type="text" id="item-desc" placeholder="Ej. Pollo Asado..."></div>
+            <div class="col-precio"><label for="item-precio">V. Unit ($)</label><input type="number" id="item-precio" placeholder="0"></div>
         </div>
         <button type="button" class="btn-add" onclick="agregarAlCarrito()">+ Agregar a la Cuenta</button>
 
@@ -130,16 +112,11 @@
         <div class="ui-table-container">
             <table class="ui-table">
                 <thead><tr><th>Cant</th><th>Concepto</th><th>Subtotal</th><th>X</th></tr></thead>
-                <tbody id="ui-carrito-body">
-                    </tbody>
+                <tbody id="ui-carrito-body"></tbody>
             </table>
         </div>
-        <div class="ui-total-zone">
-            Total a Cobrar: <span id="ui-gran-total">$0</span>
-        </div>
-        
+        <div class="ui-total-zone">Total: <span id="ui-gran-total">$0</span></div>
         <button id="btnGenerar" class="btn-generar" onclick="procesarTicket()">Cobrar y Generar Ticket</button>
-        <p class="nota">Desarrollado por Juxta Services</p>
     </div>
 
     <div id="ticket-render-zone">
@@ -157,209 +134,112 @@
                 <p class="m-0"><strong>ID:</strong> <span id="t-id"></span></p>
             </div>
             <div class="line"></div>
-
             <table>
-                <thead>
-                    <tr>
-                        <th class="text-left" style="width: 15%;">CANT</th>
-                        <th class="text-left" style="width: 50%;">CONCEPTO</th>
-                        <th class="text-right" style="width: 35%;">TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody id="t-productos-body">
-                    </tbody>
-            </table>
-
-            <div class="line"></div>
-            <table>
-                <tr>
-                    <td class="bold text-left" style="font-size: 16px;">TOTAL PAGADO:</td>
-                    <td class="bold text-right" style="font-size: 16px;" id="t-total"></td>
-                </tr>
+                <thead><tr><th class="text-left" style="width: 15%;">CANT</th><th class="text-left" style="width: 50%;">CONCEPTO</th><th class="text-right" style="width: 35%;">TOTAL</th></tr></thead>
+                <tbody id="t-productos-body"></tbody>
             </table>
             <div class="line"></div>
-            
+            <table><tr><td class="bold text-left" style="font-size: 16px;">TOTAL PAGADO:</td><td class="bold text-right" style="font-size: 16px;" id="t-total"></td></tr></table>
+            <div class="line"></div>
             <div class="text-center" style="font-size: 11px;">
-                <p class="m-0">¡Gracias por confiar en nosotros!</p>
-                <p class="m-0">Software Juxta Services v1.0</p>
-                <p style="margin: 2px 0; margin-top: 10px;">*** COPIA CLIENTE ***</p>
+                <p class="m-0">¡Gracias por su compra!</p>
+                <p class="m-0">*** COPIA CLIENTE ***</p>
                 <p style="margin-top: 15px; border-top: 1px solid #000; padding-top: 10px; font-family: sans-serif; font-size: 10px; color: #333;">
-                    ¿Buscas tecnología para tu negocio?<br>
-                    <strong>Soluciones por Juxta Services</strong>
+                    ¿Buscas tecnología para tu negocio?<br><strong>Soluciones POS por Juxta Services</strong>
                 </p>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN DE NEGOCIO
-        const CONFIG_NEGOCIO = {
-            nombre: "POLLOS EL BUEN SABOR",
-            nit: "900.123.456-7"
+        // ==========================================
+        // SISTEMA DE SEGURIDAD Y ESTADO
+        // ==========================================
+        const PIN_AUTORIZADO = "2026"; // <-- PIN PARA TU CLIENTE
+        
+        window.onload = () => {
+            // Verifica si el navegador ya tiene la llave de acceso
+            if (localStorage.getItem("juxta_auth") === "true") {
+                document.getElementById("pantalla-bloqueo").style.display = "none";
+            }
         };
 
-        // ESTADO GLOBAL (Memoria Volátil)
+        function validarAcceso() {
+            const pinIngresado = document.getElementById("pin-acceso").value;
+            if (pinIngresado === PIN_AUTORIZADO) {
+                localStorage.setItem("juxta_auth", "true"); // Guarda sesión persistente
+                const bloqueo = document.getElementById("pantalla-bloqueo");
+                bloqueo.style.opacity = '0';
+                setTimeout(() => bloqueo.style.display = "none", 500);
+            } else {
+                alert("PIN Incorrecto. Acceso denegado.");
+                document.getElementById("pin-acceso").value = "";
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DEL POS (CARRITO Y RENDERIZADO)
+        // ==========================================
+        const CONFIG_NEGOCIO = { nombre: "POLLOS EL BUEN SABOR", nit: "900.123.456-7" };
         let carrito = [];
 
-        // Utilidades Matemáticas y de Formato
-        const formatearMoneda = (valor) => {
-            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(valor);
-        };
+        const formatearMoneda = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
         const obtenerFechaActual = () => {
-            const ahora = new Date();
-            const dia = String(ahora.getDate()).padStart(2, '0');
-            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-            const horas = String(ahora.getHours()).padStart(2, '0');
-            const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            return `${dia}/${mes}/${ahora.getFullYear()} ${horas}:${minutos}`;
+            const d = new Date();
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         };
 
-        // MOTOR DE ESTADO: Agregar Producto
         function agregarAlCarrito() {
-            const cantInput = document.getElementById('item-cant');
-            const descInput = document.getElementById('item-desc');
-            const precioInput = document.getElementById('item-precio');
-
-            const cantidad = parseInt(cantInput.value);
-            const descripcion = descInput.value.trim().toUpperCase();
-            const precioUnitario = parseFloat(precioInput.value);
-
-            if (!cantidad || cantidad < 1 || !descripcion || !precioUnitario || precioUnitario < 0) {
-                alert("Verifique la cantidad, descripción y precio del producto.");
-                return;
-            }
-
-            const subtotal = cantidad * precioUnitario;
-
-            // Inyectar al arreglo
-            carrito.push({
-                cantidad: cantidad,
-                descripcion: descripcion,
-                subtotal: subtotal
-            });
-
-            // Limpiar inputs
-            cantInput.value = '1';
-            descInput.value = '';
-            precioInput.value = '';
-            descInput.focus();
-
-            renderizarInterfaz();
+            const c = parseInt(document.getElementById('item-cant').value);
+            const d = document.getElementById('item-desc').value.trim().toUpperCase();
+            const p = parseFloat(document.getElementById('item-precio').value);
+            if (!c || c < 1 || !d || !p || p < 0) return alert("Verifique los datos del producto.");
+            carrito.push({ cantidad: c, descripcion: d, subtotal: c * p });
+            document.getElementById('item-cant').value = '1'; document.getElementById('item-desc').value = ''; document.getElementById('item-precio').value = '';
+            document.getElementById('item-desc').focus(); renderizarInterfaz();
         }
 
-        // MOTOR DE ESTADO: Eliminar Producto
-        function eliminarDelCarrito(index) {
-            carrito.splice(index, 1);
-            renderizarInterfaz();
-        }
+        function eliminarDelCarrito(i) { carrito.splice(i, 1); renderizarInterfaz(); }
 
-        // MOTOR DE RENDERIZADO: Sincronizar UI y Ticket Oculto
         function renderizarInterfaz() {
-            const uiBody = document.getElementById('ui-carrito-body');
-            const ticketBody = document.getElementById('t-productos-body');
-            
-            uiBody.innerHTML = '';
-            ticketBody.innerHTML = '';
-            let granTotal = 0;
-
-            carrito.forEach((item, index) => {
-                granTotal += item.subtotal;
-                
-                // Truncar para que no rompa el ticket
-                let descCorta = item.descripcion.length > 18 ? item.descripcion.substring(0, 18) + "..." : item.descripcion;
-
-                // 1. Dibujar en la UI del vendedor
-                uiBody.innerHTML += `
-                    <tr>
-                        <td>${item.cantidad}</td>
-                        <td>${descCorta}</td>
-                        <td>${formatearMoneda(item.subtotal)}</td>
-                        <td><button class="btn-del" onclick="eliminarDelCarrito(${index})">X</button></td>
-                    </tr>
-                `;
-
-                // 2. Dibujar en el Ticket Físico (Oculto)
-                ticketBody.innerHTML += `
-                    <tr>
-                        <td class="text-left">${item.cantidad}</td>
-                        <td class="text-left">${descCorta}</td>
-                        <td class="text-right">${formatearMoneda(item.subtotal)}</td>
-                    </tr>
-                `;
+            const uiBody = document.getElementById('ui-carrito-body'); const tBody = document.getElementById('t-productos-body');
+            uiBody.innerHTML = ''; tBody.innerHTML = ''; let gTotal = 0;
+            carrito.forEach((item, i) => {
+                gTotal += item.subtotal;
+                let dCorta = item.descripcion.length > 18 ? item.descripcion.substring(0, 18) + "..." : item.descripcion;
+                uiBody.innerHTML += `<tr><td>${item.cantidad}</td><td>${dCorta}</td><td>${formatearMoneda(item.subtotal)}</td><td><button class="btn-del" onclick="eliminarDelCarrito(${i})">X</button></td></tr>`;
+                tBody.innerHTML += `<tr><td class="text-left">${item.cantidad}</td><td class="text-left">${dCorta}</td><td class="text-right">${formatearMoneda(item.subtotal)}</td></tr>`;
             });
-
-            // Actualizar Totales
-            document.getElementById('ui-gran-total').innerText = formatearMoneda(granTotal);
-            document.getElementById('t-total').innerText = formatearMoneda(granTotal);
+            document.getElementById('ui-gran-total').innerText = formatearMoneda(gTotal); document.getElementById('t-total').innerText = formatearMoneda(gTotal);
         }
 
-        // MOTOR DE EJECUCIÓN: Generar PNG y Enviar
         async function procesarTicket() {
-            if (carrito.length === 0) {
-                alert("El carrito está vacío. Agregue productos antes de cobrar.");
-                return;
-            }
-
-            const btn = document.getElementById('btnGenerar');
-            btn.innerText = "Procesando Transacción...";
-            btn.disabled = true;
+            if (carrito.length === 0) return alert("El carrito está vacío.");
+            const btn = document.getElementById('btnGenerar'); btn.innerText = "Procesando..."; btn.disabled = true;
 
             try {
-                const cliente = document.getElementById('cliente').value.trim() || 'CLIENTE GENERAL';
+                const cliente = document.getElementById('cliente').value.trim() || 'GENERAL';
                 const identificacion = document.getElementById('identificacion').value.trim() || 'N/A';
                 const ticketNro = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
 
-                // Inyección de Cabecera al Ticket
-                document.getElementById('t-empresa-nombre').innerText = CONFIG_NEGOCIO.nombre;
-                document.getElementById('t-empresa-nit').innerText = CONFIG_NEGOCIO.nit;
-                document.getElementById('t-fecha').innerText = obtenerFechaActual();
-                document.getElementById('t-nro').innerText = ticketNro;
-                document.getElementById('t-cliente').innerText = cliente.toUpperCase();
-                document.getElementById('t-id').innerText = identificacion;
+                document.getElementById('t-empresa-nombre').innerText = CONFIG_NEGOCIO.nombre; document.getElementById('t-empresa-nit').innerText = CONFIG_NEGOCIO.nit;
+                document.getElementById('t-fecha').innerText = obtenerFechaActual(); document.getElementById('t-nro').innerText = ticketNro;
+                document.getElementById('t-cliente').innerText = cliente.toUpperCase(); document.getElementById('t-id').innerText = identificacion;
 
-                // Renderizado Matemático a PNG
-                const ticketElement = document.getElementById('ticket-visual');
-                const canvas = await html2canvas(ticketElement, { scale: 2, backgroundColor: "#ffffff" });
+                const canvas = await html2canvas(document.getElementById('ticket-visual'), { scale: 2, backgroundColor: "#ffffff" });
 
                 canvas.toBlob(async (blob) => {
                     const file = new File([blob], `Ticket_POS_${ticketNro}.png`, { type: 'image/png' });
-
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: 'Ticket de Venta',
-                                text: `Adjunto recibo de compra. Gracias por preferir ${CONFIG_NEGOCIO.nombre}`
-                            });
-                        } catch (e) { console.log('Share cancelado', e); }
+                        try { await navigator.share({ files: [file], title: 'Ticket de Venta', text: `Adjunto recibo de ${CONFIG_NEGOCIO.nombre}` }); } catch (e) { }
                     } else {
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.download = `Ticket_POS_${ticketNro}.png`;
-                        link.href = url; link.click(); URL.revokeObjectURL(url);
-                        
-                        setTimeout(() => {
-                            const msj = encodeURIComponent(`Hola, tu recibo de ${CONFIG_NEGOCIO.nombre} ha sido generado. Por favor adjúntalo aquí.`);
-                            window.open(`https://wa.me/?text=${msj}`, '_blank');
-                        }, 500);
+                        const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `Ticket_POS_${ticketNro}.png`; link.href = url; link.click(); URL.revokeObjectURL(url);
+                        setTimeout(() => window.open(`https://wa.me/?text=${encodeURIComponent(`Tu recibo ha sido generado.`)}`, '_blank'), 500);
                     }
-
-                    // Reset de Máquina de Estado (Limpiar todo para el siguiente cliente)
-                    carrito = [];
-                    renderizarInterfaz();
-                    document.getElementById('cliente').value = '';
-                    document.getElementById('identificacion').value = '';
-                    btn.innerText = "Cobrar y Generar Ticket";
-                    btn.disabled = false;
-
+                    carrito = []; renderizarInterfaz(); document.getElementById('cliente').value = ''; document.getElementById('identificacion').value = '';
+                    btn.innerText = "Cobrar y Generar Ticket"; btn.disabled = false;
                 }, 'image/png');
-
-            } catch (error) {
-                console.error("Fallo en renderizado:", error);
-                alert("Error de procesamiento.");
-                btn.innerText = "Cobrar y Generar Ticket";
-                btn.disabled = false;
-            }
+            } catch (error) { alert("Error de procesamiento."); btn.innerText = "Cobrar y Generar Ticket"; btn.disabled = false; }
         }
     </script>
 </body>
